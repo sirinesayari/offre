@@ -1,0 +1,17 @@
+.red-text {
+    color: red;
+}
+.thin-text {
+    font-weight: 10; 
+}
+.expiredInterview {
+    filter: blur(2px); /* ou toute autre valeur de flou souhaitée */
+    opacity: 0.8; /* ou toute autre valeur d'opacité souhaitée */
+    transition: filter 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  }
+  
+  .expiredInterview:hover {
+    filter: blur(0px);
+    background: transparent /* Retour à la couleur transparente au survol */
+  }
+  

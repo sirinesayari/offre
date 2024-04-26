@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+    stages {
+        stage('Clone backend repository') {
+            steps {
+                dir('OpNet-PiWeb') {
+                    git branch: 'main',
+                    url: 'https://github.com/sarra19/OpNet-PiWeb.git'
+                }
+            }
+        }
+        stage('Install backend dependencies') {
+            steps {
+                dir('OpNet-PiWeb/Backend') {
+                    sh 'npm install'
+                }
+            }
+        }
+        stage('Build application') {
+            steps {
+                dir('OpNet-PiWeb/Backend') {
+                    script {
+                        sh 'npm run dev'
+                    }
+                }
+            }
+        }
+    }
+}

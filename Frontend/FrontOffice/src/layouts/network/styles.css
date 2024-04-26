@@ -1,0 +1,35 @@
+.pagination {
+    display: inline-block;
+    padding-left: 0;
+    margin: 0;
+    border-radius: 4px;
+  }
+  
+  .pagination li {
+    display: inline;
+  }
+  
+  .pagination li button {
+    color: #333;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 6px 12px;
+    margin-left: -1px;
+    line-height: 1.42857143;
+    text-decoration: none;
+  }
+  
+  .pagination li.active button {
+    z-index: 3;
+    color: #fff;
+    cursor: default;
+    background-color: #E82227;
+    border-color: #E82227;
+  }
+  
+  .pagination li button:hover,
+  .pagination li.active button:hover {
+    background-color: #ec7e81;
+    border-color: #e75156;
+  }
+  

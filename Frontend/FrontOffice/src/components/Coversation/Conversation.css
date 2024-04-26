@@ -1,0 +1,14 @@
+/* Dans votre fichier CSS */
+.deleteButton {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: red;
+    font-size: 1.2rem;
+    margin-left: 10px;
+  }
+  
+  .deleteButton:hover {
+    color: darkred;
+  }
+  

@@ -1,0 +1,40 @@
+.red-border {
+    border-color: rgba(230, 18, 18, 0.778) !important;
+  }
+  
+  .darkorange-border {
+    border-color: #FF8800 !important;
+  }
+  
+  .darkblue-border {
+    border-color: darkblue !important;
+  }
+  
+  .green-border {
+    border-color: #007E33 !important;
+  }
+
+.red-background {
+    background-color: rgba(246, 10, 10, 0.136) !important;
+  }
+  
+  .darkorange-background {
+    background-color: #ffbb3348 !important;
+  }
+  
+  .darkblue-background {
+    background-color: lightsteelblue !important;
+  }
+  
+  .green-background {
+    background-color: #00c80a32 !important;
+  }
+  
+
+.inline-elements {
+  display: flex;
+}
+
+.inline-elements > * {
+  margin-right: 2px;
+}

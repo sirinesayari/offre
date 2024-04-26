@@ -1,0 +1,20 @@
+/* styles.module.css */
+
+.error_msg,
+.success_msg {
+  width: 300px; /* Ajustez la largeur selon vos besoins */
+  padding: 10px; /* Réduisez légèrement le rembourrage */
+  margin: 10px auto; /* Centrez les messages horizontalement */
+  font-size: 16px; /* Ajustez la taille de la police selon vos préférences */
+  color: white;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.error_msg {
+  background-color: #f34646; /* Couleur de fond pour les messages d'erreur */
+}
+
+.success_msg {
+  background-color: #5cdd5c; /* Couleur de fond pour les messages de succès */
+}

@@ -1,0 +1,7 @@
+git init                 
+git add .
+git commit -m "commit" 
+git branch etudiant   // new branch
+git checkout atelier2  
+git remote add origin https://github.com/dhia1195/Les_invincibles4twin3.git
+git push -u origin atelier2     

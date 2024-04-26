@@ -1,0 +1,202 @@
+/* Cover.css */
+.file-input-container {
+  position: relative;
+  display: inline-block;
+  text-align: center; 
+}
+
+.file-input-container input[type="file"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-button {
+  display: inline-block;
+  background-color: #ef6654;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.upload-button:hover {
+  background-color: #ef6654;
+}
+<<<<<<< HEAD
+<<<<<<< HEAD
+
+
+/* Profile Container */
+.profile-container {
+=======
+.quiz-container {
+>>>>>>> origin/telli
+=======
+.quiz-container {
+>>>>>>> origin/telli
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+<<<<<<< HEAD
+<<<<<<< HEAD
+/* Profile Information */
+.profile-info {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+/* Profile Header */
+.profile-header {
+  display: flex;
+  align-items: center;
+}
+
+.profile-picture {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-right: 20px;
+}
+
+.profile-details h1 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.profile-details p {
+  margin: 5px 0;
+  color: #666;
+}
+
+/* Profile Body */
+.profile-body {
+  margin-top: 20px;
+}
+
+.profile-section {
+  margin-bottom: 20px;
+}
+
+.profile-section h2 {
+=======
+=======
+>>>>>>> origin/telli
+.quiz-title {
+  font-size: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.question-container {
+  margin-bottom: 30px;
+}
+
+.question-text {
+<<<<<<< HEAD
+>>>>>>> origin/telli
+=======
+>>>>>>> origin/telli
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+<<<<<<< HEAD
+<<<<<<< HEAD
+.experience-item, .education-item {
+  margin-bottom: 15px;
+}
+
+.experience-item h3, .education-item h3 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.experience-item p, .education-item p {
+  margin: 5px 0;
+  color: #666;
+}
+
+.skills-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.skills-list li {
+  display: inline-block;
+  background-color: #f1f1f1;
+  color: #333;
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-right: 5px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 10px;
+  }
+
+  .profile-info {
+    padding: 15px;
+  }
+
+  .profile-picture {
+    width: 80px;
+    height: 80px;
+    margin-right: 15px;
+  }
+
+  .profile-details h1 {
+    font-size: 20px;
+  }
+
+  .profile-section h2 {
+    font-size: 18px;
+  }
+
+  .experience-item h3, .education-item h3 {
+    font-size: 16px;
+  }
+
+  .skills-list li {
+    padding: 3px 8px;
+    font-size: 14px;
+  }
+}
+=======
+=======
+>>>>>>> origin/telli
+.question-content {
+  font-size: 16px;
+}
+
+.options-list {
+  list-style: none;
+  padding: 0;
+}
+
+.option-item {
+  margin-bottom: 5px;
+  cursor: pointer;
+}
+
+.no-questions {
+  text-align: center;
+  font-size: 18px;
+}
+
+<<<<<<< HEAD
+>>>>>>> origin/telli
+=======
+>>>>>>> origin/telli

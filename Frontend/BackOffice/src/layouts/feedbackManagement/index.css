@@ -1,0 +1,19 @@
+@keyframes progress-animation {
+    0% {
+      width: 0%;
+    }
+    100% {
+      width: 100%;
+    }
+  }
+  
+
+.highlighted-POSITIVE {
+    background-color: lightgreen;
+}
+.highlighted-NEGATIVE {
+    background-color: pink;
+}
+.highlighted-NEUTRAL {
+    background-color: lightgray;
+}
