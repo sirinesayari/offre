@@ -7,32 +7,28 @@ const Notification = require('../models/notification');
 const Email = require('../models/emailoffre'); // Importez votre modèle Email
 require('dotenv').config();
 const twilio = require('twilio');
-const http = require('http');
-const socketIO = require('socket.io');
-const app = express();
-const server = http.createServer(app);
 const nodemailer = require('nodemailer');
-const io = socketIO(server, {
-  transports: ['websocket', 'polling'],
-});
+const app = express();
 
-io.on('connection', (socket) => {
-  console.log('New client connected');
 
-  // Émettre les likes en temps réel
-  socket.on('like', (offerId) => {
-      io.emit('likeUpdate', offerId);
-  });
 
-  // Émettre les nouveaux commentaires en temps réel
-  socket.on('comment', (offerId) => {
-      io.emit('commentUpdate', offerId);
-  });
+// io.on('connection', (socket) => {
+//   console.log('New client connected',socket.id);
 
-  socket.on('disconnect', () => {
-      console.log('Client disconnected');
-  });
-});
+//   // Émettre les likes en temps réel
+//   socket.on('like', (offerId) => {
+//       io.emit('likeUpdate', offerId);
+//   });
+
+//   // Émettre les nouveaux commentaires en temps réel
+//   socket.on('comment', (offerId) => {
+//       io.emit('commentUpdate', offerId);
+//   });
+
+//   socket.on('disconnect', () => {
+//       console.log('Client disconnected');
+//   });
+// });
 
 //const upload = require("../config/multer");
 const multer = require("multer");

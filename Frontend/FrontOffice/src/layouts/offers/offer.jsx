@@ -35,9 +35,11 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import io from "socket.io-client";
-import { Picker } from 'emoji-mart';
-import EmojiInput from 'react-input-emoji';
+import CommentIcon from '@mui/icons-material/Comment';
 
+const socket =io('/',{
+  reconnection: true
+})
 
 
 const useStyles = makeStyles((theme) => ({
@@ -83,7 +85,7 @@ function Offers() {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedOffer, setExpandedOffer] = useState(null);
   const [comments, setComments] = useState({});
-  const [likes, setLikes] = useState({});
+  const [likes, setLikes] = useState([]);
   const [allComments, setAllComments] = useState({});
   const [openModal, setOpenModal] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState(null);
@@ -91,12 +93,12 @@ function Offers() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const socket = io.connect("http://localhost:5000");
 
   const [quiz, setQuiz] = useState(null);
+const [commentsRealTime,setCommentRealTime]= useState([]);
+const [addlikes, setAddLikes] = useState([]);
+const [removelikes, setRemoveLikes] = useState([]);
 
-   
-  
 
   const itemsPerPage = 6;
   const userId = sessionStorage.getItem("userId");
@@ -105,33 +107,25 @@ function Offers() {
 console.log(userId)
 useEffect(() => {
   fetchOffers();
-
-  // Écouter l'événement 'newComment' pour mettre à jour les commentaires
-  socket.on('commentUpdate', (comment) => {
-    setAllComments((prevComments) => ({
-      ...prevComments,
-      [comment.offerId]: [...(prevComments[comment.offerId] || []), comment],
-    }));
-  });
-
-  // Écouter l'événement 'likeUpdated' pour mettre à jour les likes
-  socket.on('likeUpdated', ({ offerId, likesCount }) => {
-    setOffers((prevOffers) =>
-      prevOffers.map((offer) =>
-        offer._id === offerId ? { ...offer, likesCount } : offer
-      )
-    );
-  });
-
-  return () => {
-    // Nettoyer les écouteurs d'événements lors du démontage du composant
-    socket.off('newComment');
-    socket.off('likeUpdated');
-  };
 }, [searchTerm, sortOrder, currentPage]);
+useEffect(()=>{
+  //console.log('SOCKET IO',socket);
+socket.on('new-comment',(newComment)=>{
+setCommentRealTime(newComment);
+})
+},[])
+useEffect(() => {
+  socket.on('add-like', (newLike) => {
+    setAddLikes(newLike);
+    setRemoveLikes(''); // Réinitialiser les likes supprimés
+  });
 
-
-
+  socket.on('remove-like', (newLike) => {
+    setRemoveLikes(newLike);
+    setAddLikes(''); // Réinitialiser les likes ajoutés
+  });
+}, []);
+//let uiAddLike = addlikes > 0 ? addlikes : removelikes.length > 0 ? removelikes: offer;
   const fetchOffers = async () => {
     try {
       const response = await axios.get("http://localhost:5000/offer/getall", {
@@ -203,44 +197,54 @@ useEffect(() => {
     }
   };
 
-  const handleLike = async (offerId) => {
-    try {
-      const response = await axios.post(`http://localhost:5000/offer/${offerId}/like/${userId}`, { likes: [userId] });
-      setLikes(prevLikes => ({
-        ...prevLikes,
-        [offerId]: true
-      }));
-      socket.emit('likeUpdated', { offerId, likesCount: response.data.likesCount }); // Émettre l'événement 'likeUpdated'
-      alert("Vous avez aimé cette offre !");
-    } catch (error) {
-      console.error('Error adding like:', error);
+ // Lorsqu'un like est ajouté
+const handleLike = async (offerId) => {
+  try {
+    const response = await axios.post(`http://localhost:5000/offer/${offerId}/like/${userId}`, null);
+    setLikes(prevLikes => ({
+      ...prevLikes,
+      [offerId]: true
+    }));
+    socket.emit('likeUpdated', { offerId, likesCount: response.data.likesCount });
+    alert("Vous avez aimé cette offre !");
+  } catch (error) {
+    console.error('Erreur lors de l\'ajout de like:', error);
+    // Affichez un message d'erreur ou effectuez une action appropriée en cas d'échec de la requête.
+  }
+};
+
+// Lorsqu'un like est supprimé
+const handleDislike = async (offerId) => {
+  try {
+    const response = await axios.delete(`http://localhost:5000/offer/${offerId}/unlike/${userId}`);
+    setLikes(prevLikes => ({
+      ...prevLikes,
+      [offerId]: false
+    }));
+    alert("Vous avez désaimé cette offre !");
+  } catch (error) {
+    console.error('Erreur lors de la suppression de like:', error);
+    if (error.response && error.response.data && error.response.data.error) {
+      alert(error.response.data.error); // Affichez le message d'erreur renvoyé par le serveur
+    } else {
+      alert('Une erreur est survenue lors de la suppression du like.');
     }
-  };
+  }
+};
   
-  const handleDislike = async (offerId) => {
-    try {
-      const response = await axios.delete(`http://localhost:5000/offer/${offerId}/unlike/${userId}`, { data: { likes: [userId] } });
-      setLikes(prevLikes => ({
-        ...prevLikes,
-        [offerId]: false
-      }));
-      alert("Vous avez désaimé cette offre !");
-    } catch (error) {
-      console.error('Error removing like:', error);
-    }
-  };
+  
   
 
   const handleComment = async (offerId, comment) => {
     try {
       const response = await axios.post(`http://localhost:5000/offer/${offerId}/comment/add/${userId}`, { text: comment });
       console.log(response.data.message);
-      socket.emit('commentUpdate', { offerId, ...response.data.comment }); // Émettre l'événement 'newComment'
+      socket.emit('comment', { offerId, ...response.data.comments }); // Émettre l'événement 'newComment'
     } catch (error) {
       console.error('Error adding comment:', error);
     }
   };
-
+  let uiCommentUpdate = commentsRealTime.length > 0 ? commentsRealTime : comments
   const handleDeleteComment = async (offerId, comment) => {
     try {
       const response = await axios.delete(`http://localhost:5000/offer/${offerId}/comment/${comment._id}/delete/${userId}`);
@@ -394,11 +398,13 @@ const handleToggleComments = async (offerId) => {
                     <Grid container alignItems="center" spacing={2}>
                     <Grid item>
                     <Button
-                    onClick={() => handleToggleComments(offer._id)}
-                    color="primary"
-                  >
-                     {showComments[offer._id] ? 'Masquer les commentaires' : 'tous les commentaires'}
+  onClick={() => handleToggleComments(offer._id)}
+  color="primary"
+   // Remplacez CommentIcon par l'icône de commentaire de votre choix
+>
+  {showComments[offer._id] ? 'Masquer les commentaires' : <CommentIcon />} {/* Remplacez CommentIcon par l'icône de commentaire de votre choix */}
 </Button>
+
                         <Button 
   startIcon={<ThumbUpIcon />} 
   size="small"

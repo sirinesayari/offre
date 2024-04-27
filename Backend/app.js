@@ -7,7 +7,6 @@ const logger = require("morgan");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const http = require("http");
 
 const passport = require("passport");
 const app = express();
@@ -25,11 +24,21 @@ const path = require("path");
 const interviewRouter = require("./routes/interview")
 const feedbackRouter = require("./routes/feedback")
 
+//socket 
+const http = require('http');
+const server = http.createServer(app);
+const Server = require('socket.io');
 
+const io =  Server(server);
 
+io.on('connection', (socket) => {
+    //console.log('New client connected',socket.id);
+    socket.on('comment',(msg)=>{
+      console.log('new-comment',msg);
+    })
+  })
 
-
-
+exports.io =io
 
 
 // Connect to MongoDB
@@ -57,6 +66,7 @@ const questionRouter = require("./routes/question");
 const candRouter = require("./routes/candidature")
 const quizRoutes = require('./routes/quiz');
 const offerRouter =require("./routes/offer");
+const postRoute =require("./routes/post");
 
 
 app.use(cors({
@@ -123,6 +133,7 @@ app.use('/candidature', candRouter);
 
 app.use('/quiz', quizRoutes);
 app.use('/offer',offerRouter);
+app.use('/post',postRoute);
 
 
 
@@ -135,7 +146,6 @@ router.use(cors());
 
 // Configuration du serveur
 
-const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 

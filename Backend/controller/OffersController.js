@@ -2,7 +2,7 @@ const Offer = require("../models/offer");
 
 
 const  User = require('../models/user');
-
+const main = require('../app');
 
 
 async function getAllOffers(req, res) {
@@ -191,12 +191,9 @@ async function addComment(req, res) {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    //io.emit('newComment', {
-     // message: `${user.firstname} ${user.lastname} a fait un commentaire sur l'offre '${offer.title}'`
-    //});
     offer.comments.push({ text: text, user: user._id }); // Ajout de l'ID de l'utilisateur au commentaire
     await offer.save();
-    io.emit('commentUpdate', req.params.offerId);
+    main.io.emit('add-like',offre);
     res.status(201).json({ message: "Comment added successfully" });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -324,7 +321,7 @@ async function addLike(req, res) {
     if (!offer.likes.includes(req.params.userId)) {
       offer.likes.push(req.params.userId);
       await offer.save();
-      io.emit('likeUpdate', req.params.offerId);
+      io.emit('add-like', req.params.offerId);
       return res.status(201).json({ message: "Like added successfully" });
     } else {
       return res.status(400).json({ error: "You have already liked this offer" });
@@ -357,7 +354,7 @@ async function removeLike(req, res) {
     if (offer.likes.includes(userId)) {
       offer.likes = offer.likes.filter(like => like.toString() !== userId.toString());
       await offer.save();
-      io.emit('likeUpdate', req.params.offerId);
+      io.emit('remove-like', req.params.offerId);
       return res.status(200).json({ message: "Like removed successfully" });
     } else {
       return res.status(400).json({ error: "You have not liked this offer" });
