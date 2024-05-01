@@ -26,8 +26,6 @@ const Offer = new Schema({
   },
   description: {
     type: String,
-    required: true,
-
   },
   skills: String,
   location: String,
@@ -43,6 +41,7 @@ const Offer = new Schema({
   },
   expirationDate: Date,
   file: String,
+  pdf:String,
   contractType: {
     type: String,
     enum: ["CDI", "CDD", "freelance", "stage"], // Example contract types
@@ -59,7 +58,12 @@ const Offer = new Schema({
   archived: {
     type: Boolean,
     default: false
-  } // Champ pour indiquer si l'offre est archivée ou non
+  },
+  user:{
+    type:Schema.Types.ObjectId,
+    ref:"User",
+    required:true
+  }
 });
 
 module.exports = mongoose.model("offer", Offer);

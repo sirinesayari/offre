@@ -1,9 +1,9 @@
 const Offer = require("../models/offer");
 
-
-const  User = require('../models/user');
-const main = require('../app');
-
+const User = require("../models/user");
+const main = require("../app");
+const { io } = require("../app");
+const Notification = require("../models/notification");
 
 async function getAllOffers(req, res) {
   try {
@@ -15,7 +15,7 @@ async function getAllOffers(req, res) {
     if (searchTerm) {
       query = {
         ...query,
-        title: { $regex: searchTerm, $options: 'i' } // Recherche insensible à la casse dans le titre de l'offre
+        title: { $regex: searchTerm, $options: "i" }, // Recherche insensible à la casse dans le titre de l'offre
       };
     }
 
@@ -23,7 +23,7 @@ async function getAllOffers(req, res) {
     if (offerType) {
       query = {
         ...query,
-        offerType: offerType // Filtre sur le type d'offre
+        offerType: offerType, // Filtre sur le type d'offre
       };
     }
 
@@ -31,13 +31,11 @@ async function getAllOffers(req, res) {
     if (contractType) {
       query = {
         ...query,
-        contractType: contractType // Filtre sur le type de contrat
+        contractType: contractType, // Filtre sur le type de contrat
       };
     }
 
     const data = await Offer.find(query);
-
-
 
     res.status(200).json(data);
   } catch (err) {
@@ -82,8 +80,6 @@ async function deleteOffer(req, res) {
   }
 }
 
-
-
 async function archiveOffer(req, res) {
   try {
     const offer = await Offer.findById(req.params.id);
@@ -99,14 +95,10 @@ async function archiveOffer(req, res) {
     await offer.save();
 
     return res.status(200).json({ message: "Offer archived successfully" });
-
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 }
-
-
-
 
 async function archiveExpiredOffer(req, res) {
   try {
@@ -117,15 +109,15 @@ async function archiveExpiredOffer(req, res) {
     }
 
     // Récupérer la date actuelle au format ISO 8601 (UTC)
-    const currentDate = new Date().toISOString().split('T')[0];
+    const currentDate = new Date().toISOString().split("T")[0];
 
     // Vérifier si la date d'expiration est dépassée
     const expirationDate = new Date(offer.expirationDate);
 
-    console.log('Current Date:', currentDate);
-    console.log('Expiration Date:', expirationDate.toISOString().split('T')[0]);
+    console.log("Current Date:", currentDate);
+    console.log("Expiration Date:", expirationDate.toISOString().split("T")[0]);
 
-    if (currentDate >= expirationDate.toISOString().split('T')[0]) {
+    if (currentDate >= expirationDate.toISOString().split("T")[0]) {
       // Marquer l'offre comme archivée
       offer.archived = true;
 
@@ -159,13 +151,10 @@ async function unarchiveOffer(req, res) {
     await offer.save();
 
     return res.status(200).json({ message: "Offer unarchived successfully" });
-
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 }
-
-
 
 async function getArchivedOffers(req, res) {
   try {
@@ -176,13 +165,13 @@ async function getArchivedOffers(req, res) {
   }
 }
 
-//crud commentaire 
+//crud commentaire
 async function addComment(req, res) {
-
   try {
     const { text } = req.body;
     const offer = await Offer.findById(req.params.offerId);
     const user = await User.findById(req.params.userId);
+    console.log("comment", offer, user);
 
     if (!offer) {
       return res.status(404).json({ error: "Offer not found" });
@@ -191,10 +180,22 @@ async function addComment(req, res) {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    offer.comments.push({ text: text, user: user._id }); // Ajout de l'ID de l'utilisateur au commentaire
+    offer.comments.push({ text: text, user: user._id });
     await offer.save();
-    main.io.emit('add-like',offre);
-    res.status(201).json({ message: "Comment added successfully" });
+
+    const notification = new Notification({
+      userId: req.params.userId,
+      message: `${user.firstname} ${user.lastname} a commenter sur votre offre ${offer.title} `,
+      offre: req.params.offerId,
+      type: "comment",
+    });
+
+    console.log(notification);
+    await notification.save();
+    io.emit("new-notif", notification);
+
+    // main.io.emit("add-like", offre);
+    res.status(201).json({ text, message: "Comment added successfully" });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -227,8 +228,6 @@ async function updateComment(req, res) {
   }
 }
 
-
-
 async function deleteComment(req, res) {
   try {
     // Récupérer l'utilisateur courant
@@ -240,30 +239,50 @@ async function deleteComment(req, res) {
     }
 
     const offer = await Offer.findById(req.params.offerId);
-    
+
     if (!offer) {
       return res.status(404).json({ error: "Offer not found" });
     }
 
-    const commentIndex = offer.comments.findIndex(comment => comment._id.toString() === req.params.commentId);
+    const commentIndex = offer.comments.findIndex(
+      (comment) => comment._id.toString() === req.params.commentId
+    );
 
     if (commentIndex === -1) {
       return res.status(404).json({ error: "Comment not found" });
     }
 
     const comment = offer.comments[commentIndex];
-    console.log('Comment user ID:', comment.user.toString());
-    console.log('Current user ID:', user._id.toString());
-    
+    console.log("Comment user ID:", comment.user.toString());
+    console.log("Current user ID:", user._id.toString());
+
     // Vérifier si l'ID de l'utilisateur courant correspond à l'ID de l'utilisateur qui a créé le commentaire
     if (comment.user.toString() !== user._id.toString()) {
-      return res.status(403).json({ error: "Vous n'êtes pas autorisé à supprimer ce commentaire" });
+      return res
+        .status(403)
+        .json({ error: "Vous n'êtes pas autorisé à supprimer ce commentaire" });
     }
 
-    await offer.comments.pull({ _id: req.params.commentId });  // Utilisez pull pour supprimer le commentaire par son ID
+    await offer.comments.pull({ _id: req.params.commentId }); // Utilisez pull pour supprimer le commentaire par son ID
     await offer.save();
-    io.emit('commentUpdate', req.params.offerId);
+    io.emit("commentUpdate", req.params.offerId);
+    const notifications = await Notification.find({
+      userId: req.params.userId,
+      type: "comment",
+      offre: req.params.offerId,
+    });
+    console.log("notification", notifications);
+    if (notifications.length !== 0) {
+      console.log("happy", notifications[0]);
 
+      const deletedNotification = await Notification.findByIdAndDelete(
+        notifications[0]._id
+      );
+      if (!deletedNotification) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      io.emit("remove-notif", deletedNotification);
+    }
     res.status(200).json({ message: "Commentaire supprimé avec succès" });
   } catch (err) {
     console.log("Error deleting comment:", err.message);
@@ -271,31 +290,30 @@ async function deleteComment(req, res) {
   }
 }
 
-
-
-
-
-
-
 async function getCommentsByOfferId(req, res) {
   try {
-    const offer = await Offer.findById(req.params.offerId).populate('comments.user', 'firstname lastname');
-    
+    const offer = await Offer.findById(req.params.offerId).populate(
+      "comments.user",
+      "firstname lastname"
+    );
+
     if (!offer) {
       return res.status(404).json({ error: "Offer not found" });
     }
 
     // Récupérer les commentaires de l'offre avec les noms complets des utilisateurs pour chaque commentaire
-    const comments = await Promise.all(offer.comments.map(async (comment) => {
-      const user = await User.findById(comment.user);
-      if (user) {
-        return {
-          ...comment._doc,
-          user: `${user.firstname} ${user.lastname}`
-        };
-      }
-      return comment;
-    }));
+    const comments = await Promise.all(
+      offer.comments.map(async (comment) => {
+        const user = await User.findById(comment.user);
+        if (user) {
+          return {
+            ...comment._doc,
+            user: `${user.firstname} ${user.lastname}`,
+          };
+        }
+        return comment;
+      })
+    );
 
     res.status(200).json(comments);
   } catch (err) {
@@ -308,6 +326,7 @@ async function addLike(req, res) {
   try {
     const offer = await Offer.findById(req.params.offerId);
     const user = await User.findById(req.params.userId);
+    console.log(offer, req.params.offerId);
 
     if (!offer) {
       return res.status(404).json({ error: "Offer not found" });
@@ -316,76 +335,211 @@ async function addLike(req, res) {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+    const notifications = await Notification.find({
+      userId: req.params.userId,
+      type: "like",
+      offre: req.params.offerId,
+    });
 
-    // Check if user has already liked the offer
-    if (!offer.likes.includes(req.params.userId)) {
-      offer.likes.push(req.params.userId);
-      await offer.save();
-      io.emit('add-like', req.params.offerId);
-      return res.status(201).json({ message: "Like added successfully" });
+    if (notifications.length == 0) {
+      const notification = new Notification({
+        userId: req.params.userId,
+        message: `${user.firstname} ${user.lastname} a aimer votre offre ${offer.title}`,
+        offre: req.params.offerId,
+        type: "like",
+      });
+
+      console.log(notification);
+      await notification.save();
+
+      Offer.findByIdAndUpdate(
+        req.params.offerId,
+        {
+          $push: { likes: req.params.userId },
+        },
+        { new: true }
+      )
+        .then((updatedOffer) => {
+          if (updatedOffer) {
+            console.log("Offer updated successfully:", updatedOffer);
+          } else {
+            console.log("Offer not found");
+          }
+        })
+        .catch((err) => console.error("Error updating offer:", err));
+
+      io.emit("new-notif", notification);
     } else {
-      return res.status(400).json({ error: "You have already liked this offer" });
+      return res.status(201).json({ message: "already liked this offer" });
     }
+    return res.status(201).json({ message: "Like added successfully" });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 }
-
-
-
-
-
 
 async function removeLike(req, res) {
   try {
-    const userId = req.params.userId; // Récupérez l'ID de l'utilisateur depuis les paramètres de la requête
+    const user = await User.findById(req.params.userId);
     const offer = await Offer.findById(req.params.id);
+    console.log(offer);
 
     if (!offer) {
       return res.status(404).json({ error: "Offer not found" });
     }
-
-    // Vérifier si offer.likes est défini
-    if (!offer.likes || !Array.isArray(offer.likes)) {
-      return res.status(400).json({ error: "You have not liked this offer" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
+    const notifications = await Notification.find({
+      userId: req.params.userId,
+      type: "like",
+      offre: req.params.id,
+    });
 
-    // Vérifier si l'utilisateur a aimé l'offre
-    if (offer.likes.includes(userId)) {
-      offer.likes = offer.likes.filter(like => like.toString() !== userId.toString());
-      await offer.save();
-      io.emit('remove-like', req.params.offerId);
-      return res.status(200).json({ message: "Like removed successfully" });
+    console.log("notification", notifications);
+    if (notifications.length !== 0) {
+      console.log("happy", notifications[0]);
+
+      const deletedNotification = await Notification.findByIdAndDelete(
+        notifications[0]._id
+      );
+      if (!deletedNotification) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      const updatedOffer = await Offer.findByIdAndUpdate(
+        req.params.id,
+        {
+          $pull: { likes: req.params.userId },
+        },
+        { new: true }
+      );
+      io.emit("remove-notif", deletedNotification);
+
+      if (updatedOffer.likes.length < offer.likes.length) {
+        console.log("Offer updated successfully:", updatedOffer);
+        //io.emit("remove-like", notifications.length - 1);
+      } else {
+        console.log("Offer not found");
+      }
     } else {
-      return res.status(400).json({ error: "You have not liked this offer" });
+      return res.status(201).json({ message: "you didn't like this offer " });
     }
+    return res.status(201).json({ message: "Like removed successfully" });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 }
 
-
-
-
-// Ajoutez une nouvelle route pour obtenir le nombre de likes d'une offre spécifique
 async function getLike(req, res) {
   try {
-    const offer = await Offer.findById(req.params.id);
-    if (!offer) {
-      return res.status(404).json({ error: "Offer not found" });
-    }
-    res.status(200).json({ likes: offer.likes });
+    const notifications = await Notification.find({
+      userId: req.params.userId,
+      type: "like",
+      offre: req.params.id,
+    });
+    const currentLikes = notifications.length;
+    res.status(200).json({ currentLikes });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }
+async function getNotifications(req, res) {
+  let notifForDisplay = [];
+  try {
+    const userOffres = await Offer.find({ user: req.params.userId },);
+    console.log("User offers:", userOffres);
+    const offerIds = userOffres.map((offer) => offer._id);
+    console.log("Offer IDs:", offerIds);
+    const notifications = await Notification.find({
+      userId: { $ne: req.params.userId },
+      isRead: false 
+    });
+
+    notifications.forEach((notification) => {
+      console.log("Notification:", notification);
+      const notificationOfferId = notification.offre.toString();
+      console.log(notificationOfferId);
+      // Check if notificationOfferId is in offerIds array
+      offerIds.forEach((id) => {
+        if (notificationOfferId == id) {
+          notifForDisplay.push(notification);
+          console.log("Notifications for display:", notifForDisplay);
+        }
+      });
+    });
+
+    res.status(200).json({ notifForDisplay });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+const deleteNotificationById = async (req, res) => {
+  try {
+    const deletedNotification = await Notification.findByIdAndDelete(
+      req.params.id
+    );
+    console.log("hhhhhhhhhhhh", deletedNotification);
+
+    if (!deletedNotification) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
+
+    return res.json({
+      message: "Notification deleted successfully",
+      deletedNotification,
+    });
+  } catch (error) {
+    console.error("Error deleting notification:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+const UpdateNotificationById = async (req, res) => {
+  try {
+    const updatedNotification = await Notification.findByIdAndUpdate(
+      req.params.id,
+      { isRead: true },
+      { new: true }
+    );
+
+    if (!updatedNotification) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
+
+    return res.json({
+      message: "Notification updated successfully",
+      updatedNotification,
+    });
+  } catch (error) {
+    console.error("Error updating notification:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 
+const getStatisticsByType = async (req, res) => {
+  try {
+    // Compter le nombre d'offres pour chaque type d'offre
+    const emploiCount = await Offer.countDocuments({ offerType: "emploi" });
+    const stageCount = await Offer.countDocuments({ offerType: "stage" });
 
+    // Compter le nombre d'offres pour chaque type de contrat
+    const cdiCount = await Offer.countDocuments({ contractType: "CDI" });
+    const cddCount = await Offer.countDocuments({ contractType: "CDD" });
+    const freelanceCount = await Offer.countDocuments({ contractType: "freelance" });
 
-
-
-
+    // Envoyer les statistiques au client
+    res.status(200).json({
+      emploiCount,
+      stageCount,
+      cdiCount,
+      cddCount,
+      freelanceCount
+    });
+  } catch (error) {
+    console.error("Error getting statistics by type:", error);
+    res.status(500).send("Error getting statistics by type. Please try again.");
+  }
+};
 
 module.exports = {
   getAllOffers,
@@ -398,13 +552,15 @@ module.exports = {
   updateComment,
   deleteComment,
   archiveOffer,
-  archiveExpiredOffer, 
+  archiveExpiredOffer,
   unarchiveOffer,
-  getArchivedOffers ,
+  getArchivedOffers,
   addLike,
   removeLike,
   getCommentsByOfferId,
   getLike,
-
-
+  getNotifications,
+  deleteNotificationById,
+  UpdateNotificationById,
+  getStatisticsByType,
 };

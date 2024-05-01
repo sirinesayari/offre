@@ -1,4 +1,4 @@
-/*eslint-disable*/import React, { useState , useRef  } from "react";
+/*eslint-disable*/import React, { useState , useRef , useEffect } from "react";
 import axios from "axios";
 import MDTypography from "components/MDTypography";
 import Card from "@mui/material/Card";
@@ -17,9 +17,25 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 
 
 function Ajouter() {
+  let userId=""
   const [selectedOption, setSelectedOption] = useState("");
   const [SelectedCountries, setSelectedCountries] = useState([]);
   const inputRef = useRef(null);
+
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return parts.pop().split(";").shift();
+    }
+  }
+
+  useEffect(() => {
+    
+     userId = getCookie("userId");
+    console.log(userId);
+  }, []);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -35,6 +51,8 @@ function Ajouter() {
     contractType: "",
     internshipDuration: "",
     quiz: false, 
+    pdf: "",
+    user:getCookie("userId"),
     errors: {},
   });
   const handleCountriesChange = (event, newCountries) => {
@@ -406,7 +424,6 @@ function Ajouter() {
   ;
       const requiredFields = [
         "title",
-        "description",
         "skills",
         "offerType",
         "publicationDate",
@@ -544,6 +561,16 @@ function Ajouter() {
       file: file,
     }));
   };
+  const handlePdfChange = (event) => {
+    const pdf = event.target.files[0];
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      pdf: pdf,
+    }));
+  };
+ 
+
+
   const [quiz, setQuiz] = useState(formData.quiz || false);
   // Définissez une fonction pour gérer les changements de valeur du champ de quiz
   const handleQuizChange = (event) => {
@@ -580,6 +607,22 @@ function Ajouter() {
           </MDBox>
           <MDBox pt={4} pb={3} px={3}>
             <MDBox component="form" role="form" onSubmit={handleSubmit}>
+            <MDTypography variant="h6" gutterBottom>
+                  Ajouter un fichier PDF
+                </MDTypography>
+                  <MDInput
+                    type="file"
+                    label="pdf"
+                    variant="standard"
+                    fullWidth
+                    ref={inputRef}
+                    name="pdf"
+                    onChange={handlePdfChange}
+                    error={Boolean(formData.errors.pdf)}
+                  />
+                  <MDTypography variant="caption" color="error">
+                    {getErrorMessage("pdf")}
+                  </MDTypography>
               <MDBox mb={2}>
                 <MDInput
                   type="text"
@@ -622,7 +665,7 @@ function Ajouter() {
               <MDBox mb={2}>
                 <MDInput
                   type="textarea"
-                  label="Description *"
+                  label="Description "
                   variant="standard"
                   fullWidth
                   name="description"

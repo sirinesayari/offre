@@ -1,14 +1,27 @@
-import React from "react";
+/* eslint-disable */
+import React,{ useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import MDBox from "components/MDBox";
-/* eslint-disable */
+
 
 
 function Homepage() {
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return parts.pop().split(";").shift();
+    }
+  }
 
+  useEffect(() => {
+    
+    const userId = getCookie("userId");
+    console.log(userId);
+  }, []);
   return (
     <DashboardLayout>
       <DashboardNavbar />

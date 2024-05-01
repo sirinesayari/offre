@@ -10,26 +10,6 @@ const twilio = require('twilio');
 const nodemailer = require('nodemailer');
 const app = express();
 
-
-
-// io.on('connection', (socket) => {
-//   console.log('New client connected',socket.id);
-
-//   // Émettre les likes en temps réel
-//   socket.on('like', (offerId) => {
-//       io.emit('likeUpdate', offerId);
-//   });
-
-//   // Émettre les nouveaux commentaires en temps réel
-//   socket.on('comment', (offerId) => {
-//       io.emit('commentUpdate', offerId);
-//   });
-
-//   socket.on('disconnect', () => {
-//       console.log('Client disconnected');
-//   });
-// });
-
 //const upload = require("../config/multer");
 const multer = require("multer");
 const PDFDocument = require('pdfkit');
@@ -44,14 +24,12 @@ const client = twilio(TWILIO_SID, TWILIO_AUTH_TOKEN);
 
 
 
-// Configuration du client Twilio
 const storage = multer.diskStorage({
         destination: function (req, file, cb) {
           cb(null, "uploads/"); // Spécifiez le répertoire de destination où les fichiers seront stockés
         },
         filename: function (req, file, cb) {
-          cb(null, file.fieldname + "-" + Date.now()) + path.extname(file.originalname); // Générez un nom de fichier unique
-        },
+          cb(null, file.fieldname + "-" + Date.now() + path.extname(file.originalname));        },
       });
 // Initialiser l'upload avec multer
 const upload = multer({ storage: storage });    
@@ -59,65 +37,6 @@ const upload = multer({ storage: storage });
 router.get('/', function(req, res) {
     res.send("Hello Offer");
 });
-
-// Route pour envoyer un e-mail
-router.post('/send-email', async (req, res) => {
-  try {
-    const { to, subject, text } = req.body;
-
-    if (!to || !subject || !text) {
-      return res.status(400).json({ error: 'Veuillez fournir tous les champs nécessaires.' });
-    }
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to,
-      subject,
-      text
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    // Enregistrez l'e-mail envoyé dans la base de données
-    const newEmail = new Email({
-      to,
-      subject,
-      text,
-      status: 'sent'
-    });
-    await newEmail.save();
-
-    res.status(200).json({ message: 'E-mail envoyé avec succès.' });
-
-  } catch (error) {
-    console.error('Erreur lors de l\'envoi de l\'e-mail:', error);
-
-    // Enregistrez l'erreur dans la base de données
-    const newEmail = new Email({
-      to: req.body.to,
-      subject: req.body.subject,
-      text: req.body.text,
-      status: 'failed',
-      errorMessage: error.message
-    });
-    await newEmail.save();
-
-    res.status(500).json({ error: 'Erreur lors de l\'envoi de l\'e-mail.' });
-  }
-});
-
-const transporter = nodemailer.createTransport({
-  host: process.env.HOST,
-  port: process.env.EMAIL_PORT,
-  secure: process.env.SECURE === 'true',
-  auth: {
-    user: process.env.USER,
-    pass: process.env.PASS
-  }
-});
-const PhoneNumber = require('libphonenumber-js');
-
-// ...
 
 // Route pour envoyer un SMS
 router.post('/send-sms', async (req, res) => {
@@ -151,26 +70,14 @@ router.get('/generate-pdf', async (req, res) => {
   try {
     const doc = new PDFDocument();
     const filePath = 'offers.pdf';
-
-    // Ajouter du contenu au PDF
     doc.fontSize(20).text('Liste des Offres', 100, 50);
-
     const offers = await Offer.find();
-
-    // Tableau des en-têtes
     const tableHeaders = [ 'Titre','Compétences', 'Lieu', 'Salaire', 'Niveau d\'expérience'];
-
-    // Définir la position du tableau
     let tableY = 150;
-
-    // Dessiner les en-têtes du tableau
     tableHeaders.forEach((header, index) => {
       doc.fontSize(12).text(header, 100 + index * 100, tableY);
     });
-
-    // Mettre à jour la position Y pour les données
     tableY += 20;
-
     offers.forEach((offer) => {
       const offerData = [
         offer.title ? offer.title : '',
@@ -180,19 +87,13 @@ router.get('/generate-pdf', async (req, res) => {
         offer.experienceLevel ? offer.experienceLevel : ''
       ];
       let dataX = 100;
-      // Dessiner les données de l'offre dans le tableau
       offerData.forEach((data, index) => {
         doc.fontSize(10).text(data.toString(), 100 + index * 100, tableY);
       });
-
-      // Mettre à jour la position Y pour la prochaine ligne
       tableY += 20;
     });
-
-    // Enregistrer le PDF sur le disque
     const stream = doc.pipe(fs.createWriteStream(filePath));
     doc.end();
-
     stream.on('finish', () => {
       res.download(filePath, (err) => {
         if (err) {
@@ -227,24 +128,31 @@ router.get('/statistics', async (req, res) => {
   }
 });
 router.post("/add", upload.fields([
-    { name: "file", maxCount: 1 }
+    { name: "file", maxCount: 1 },
+    { name: "pdf", maxCount: 1 }
 ]), validate, async (req, res) => {
     try {
-        const { title, description, skills, location, salary, experienceLevel, offerType, expirationDate, contractType, internshipDuration ,quiz} = req.body;
+      console.log(req);
+        const { title, description, skills, location, salary, experienceLevel, offerType, expirationDate, contractType, internshipDuration ,quiz,user} = req.body;
         
         // Vérifier si un fichier a été téléchargé
         let file = "";
         if (req.files["file"] && req.files["file"][0]) {
-            file = req.files["file"][0].originalname;
+            file = req.files["file"][0].path;
+            console.log(req.files["file"][0].path);
+        }
+
+        let pdf = "";
+        if (req.files["pdf"] && req.files["pdf"][0]) {
+            pdf = req.files["pdf"][0].path;
+            console.log(req.files["pdf"][0].path);
         }
 
         // Vérifier si tous les champs requis sont fournis
-        if (!title || !description) { 
-            return res.status(400).send("Title and description are required.");
+        if (!title ) { 
+            return res.status(400).send("Title are required.");
         }
-        if (quiz === "false") {
-          quiz = false;
-      }
+        
         // Créer une nouvelle instance d'Offre
         const newOffer = new Offer({
             title,
@@ -258,7 +166,10 @@ router.post("/add", upload.fields([
             contractType,
             internshipDuration,
             quiz,
-            file, // Inclure le nom de fichier uniquement s'il a été téléchargé
+            user,
+            file,
+            pdf
+             // Inclure le nom de fichier uniquement s'il a été téléchargé
         });
 
         // Sauvegarder l'Offre dans la base de données
@@ -269,54 +180,13 @@ router.post("/add", upload.fields([
         return res.status(500).send("Error adding offer. Please try again.");
     }
 });
-
-  // Route pour télécharger et stocker le CV
-  // Backend
-
-// Route pour télécharger et stocker un fichier associé à une offre
-router.put("/offer/uploadFile/:offerId", upload.single("file"), async (req, res) => {
-    try {
-      const offerId = req.params.offerId;
-      const filePath = req.file.path;
-  
-      await Offer.findByIdAndUpdate(offerId, { file: filePath });
-  
-      res.status(200).send({ filePath: filePath });
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      res.status(500).send("An error occurred while uploading file");
-    }
-  });
-  
 // Route pour télécharger et stocker un fichier associé à une offre
 const path = require('path');
 const offer = require("../models/offer");
-
-// Dans votre route pour télécharger et stocker un fichier associé à une offre
-router.put("/uploadFile", upload.single("file"), async (req, res) => {
-  try {
-      const offerId = req.body.id; // Récupérer l'ID de l'offre associée au fichier
-      const filePath = req.file.filename; // Récupérer le nom du fichier téléchargé
-
-      // Construire l'URL complète du fichier téléchargé
-      const fileUrl = path.join("/uploads", filePath);
-
-      // Enregistrer le chemin du fichier dans la base de données pour l'offre avec l'ID correspondant
-      await Offer.findByIdAndUpdate(offerId, { file: fileUrl });
-
-      res.status(200).send("File uploaded successfully");
-  } catch (error) {
-      console.error("Error uploading file:", error);
-      res.status(500).send("An error occurred while uploading file");
-  }
-});
-
 router.get('/uploads/:fileName', (req, res) => {
-	const fileName = req.params.fileName;
-	// Construire le chemin de uploads en utilisant path.join()
-	const filePath = path.join(__dirname, '..', 'uploads', fileName);
-	// Envoyer le fichier uploads en tant que réponse
-	res.sendFile(filePath);
+  const fileName = req.params.fileName;
+  const filePath = path.join(__dirname, '..', 'uploads', fileName);
+  res.sendFile(filePath);
   });
 
 router.get('/getall', offerController.getAllOffers);
@@ -347,8 +217,12 @@ router.get('/:offerId/comments', offerController.getCommentsByOfferId);
 router.post("/:offerId/like/:userId", offerController.addLike);
 router.delete('/:id/unlike/:userId', offerController.removeLike);
 router.get('/:id/like/:userId', offerController.getLike);
+router.get('/notification/:userId', offerController.getNotifications);
+router.delete('/deleteNotification/:id', offerController.deleteNotificationById);
+router.put('/updateNotification/:id', offerController.UpdateNotificationById);
+
+router.get("/statistics-by-type", offerController.getStatisticsByType);
+
 
 
 module.exports = router;
-
-

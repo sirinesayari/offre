@@ -31,6 +31,8 @@ function Homepage() {
     setRandomImage(localImages[randomIndex]);
   }, [location]);
 
+
+  
   return (
     <DashboardLayout>
       <DashboardNavbar />
